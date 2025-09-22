@@ -12,7 +12,7 @@ import com.zapkart.ecommerce_backend.service.AddressService;
 
 @RestController
 @RequestMapping("/address")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:3000")
 public class AddressController {
 
     @Autowired
