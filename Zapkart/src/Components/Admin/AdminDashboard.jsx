@@ -152,7 +152,7 @@ export default function AdminDashboard() {
                   <div className="mt-4">
                     <h4>Sales Analytics</h4>
                     {/* <SalesGraph /> */}
-                    <AdminHome/>
+                    <AdminHome />
                   </div>
                 </ContentCard>
               );
@@ -196,73 +196,73 @@ export default function AdminDashboard() {
       <StyledNavbar expand="lg" variant="dark" className="mb-3 p-3">
         <Container fluid className="d-flex justify-content-between align-items-center">
           <Navbar expand="lg" variant="dark" className="mb-3" style={{ background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
-                    <Container fluid>
-                        <Navbar.Brand>ZapKart Admin</Navbar.Brand>
-                        <Navbar.Toggle aria-controls="admin-navbar-nav" />
-                        <Navbar.Collapse id="admin-navbar-nav">
-                            <Nav className="ms-auto d-flex align-items-center flex-column flex-lg-row">
-                                <Button
-                                    variant="outline-light"
-                                    className="mb-2 mb-lg-0 me-lg-3 text-white"
-                                    as={Link}
-                                    to="/ProductsHome"
-                                    style={{
-                                        backgroundColor: '#6a5acd',
-                                        borderColor: '#6a5acd',
-                                        transition: 'background-color 0.3s ease, transform 0.2s ease',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.backgroundColor = '#4e4b8b';
-                                        e.target.style.transform = 'scale(1.05)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.backgroundColor = '#6a5acd';
-                                        e.target.style.transform = 'scale(1)';
-                                    }}
-                                >
-                                    Back
-                                </Button>
+            <Container fluid>
+              <Navbar.Brand>ZapKart Admin</Navbar.Brand>
+              <Navbar.Toggle aria-controls="admin-navbar-nav" />
+              <Navbar.Collapse id="admin-navbar-nav">
+                <Nav className="ms-auto d-flex align-items-center flex-column flex-lg-row">
+                  <Button
+                    variant="outline-light"
+                    className="mb-2 mb-lg-0 me-lg-3 text-white"
+                    as={Link}
+                    to="/ProductsHome"
+                    style={{
+                      backgroundColor: '#6a5acd',
+                      borderColor: '#6a5acd',
+                      transition: 'background-color 0.3s ease, transform 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#4e4b8b';
+                      e.target.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#6a5acd';
+                      e.target.style.transform = 'scale(1)';
+                    }}
+                  >
+                    Back
+                  </Button>
 
-                                <div className="d-flex align-items-center mb-2 mb-lg-0 me-lg-3">
-                                    <p className="mb-0 me-2 text-white">{name}</p>
-                                    {image && (
-                                        <img
-                                            src={`http://localhost:8080/images/${image}`}
-                                            alt="profile"
-                                            style={{
-                                                width: "40px",
-                                                height: "40px",
-                                                borderRadius: "50%",
-                                                objectFit: "cover",
-                                            }}
-                                        />
-                                    )}
-                                </div>
+                  <div className="d-flex align-items-center mb-2 mb-lg-0 me-lg-3">
+                    <p className="mb-0 me-2 text-white">{name}</p>
+                    {image && (
+                      <img
+                        src={`${BASE_URL}/images/${image}`}
+                        alt="profile"
+                        style={{
+                          width: "40px",
+                          height: "40px",
+                          borderRadius: "50%",
+                          objectFit: "cover",
+                        }}
+                      />
+                    )}
+                  </div>
 
-                                <Button
-                                    variant="outline-light"
-                                    onClick={logout}
-                                    className="text-white"
-                                    style={{
-                                        backgroundColor: '#6a5acd',
-                                        borderColor: '#6a5acd',
-                                        transition: 'background-color 0.3s ease, transform 0.2s ease',
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.backgroundColor = '#4e4b8b';
-                                        e.target.style.transform = 'scale(1.05)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.backgroundColor = '#6a5acd';
-                                        e.target.style.transform = 'scale(1)';
-                                    }}
-                                >
-                                    Logout
-                                </Button>
-                            </Nav>
-                        </Navbar.Collapse>
-                    </Container>
-                </Navbar>
+                  <Button
+                    variant="outline-light"
+                    onClick={logout}
+                    className="text-white"
+                    style={{
+                      backgroundColor: '#6a5acd',
+                      borderColor: '#6a5acd',
+                      transition: 'background-color 0.3s ease, transform 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.backgroundColor = '#4e4b8b';
+                      e.target.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.backgroundColor = '#6a5acd';
+                      e.target.style.transform = 'scale(1)';
+                    }}
+                  >
+                    Logout
+                  </Button>
+                </Nav>
+              </Navbar.Collapse>
+            </Container>
+          </Navbar>
         </Container>
       </StyledNavbar>
 

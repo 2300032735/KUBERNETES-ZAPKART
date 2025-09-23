@@ -346,8 +346,8 @@ const ProductsHome = () => {
               <button className="bg-transparent border-2 border-white/70 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-white/10 transition-all duration-300 text-sm md:text-base backdrop-blur-sm">
                 Explore Categories
               </button>
-              <br/><br/>
-            </div><br/>
+              <br /><br />
+            </div><br />
 
             {/* Trust badges - adjusted spacing and rounded */}
             <div className="mt-12 flex flex-wrap justify-center gap-6 text-sm text-blue-100/80">
