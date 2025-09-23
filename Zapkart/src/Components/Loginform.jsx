@@ -230,14 +230,7 @@ export default function Loginform({ onLoginSuccess }) {
                 placeholder="••••••••"
                 required
               />
-              <div className="mt-3 flex justify-center items-center">
-                <div style={{ transform: 'scale(0.7)', transformOrigin: 'center' }}>
-                  <ReCAPTCHA
-                    sitekey="6LcYDzUrAAAAAAszGQA24ROkpnf9U1ytFYRxUNnR"
-                    onChange={onChange}
-                  />
-                </div>
-              </div>
+
 
 
 
