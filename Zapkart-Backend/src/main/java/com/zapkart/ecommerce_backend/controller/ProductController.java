@@ -1,142 +1,233 @@
 package com.zapkart.ecommerce_backend.controller;
 
-import com.zapkart.ecommerce_backend.model.Product;
-import com.zapkart.ecommerce_backend.repository.ProductRepository;
-import com.zapkart.ecommerce_backend.service.ProductService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Random;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.*;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import com.zapkart.ecommerce_backend.model.User;
+import com.zapkart.ecommerce_backend.service.UserService;
+import com.zapkart.ecommerce_backend.repository.UserRepository;
+import com.zapkart.ecommerce_backend.service.EmailService;
+import com.zapkart.ecommerce_backend.service.JWTManager;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
-@RequestMapping("/api/products")
-public class ProductController {
+@RequestMapping("/api/users")
+public class UserController {
 
 	@Autowired
-	private ProductService productService;
+	private UserService userService;
 
 	@Autowired
-	private ProductRepository productRepository;
+	private JWTManager jwtManager;
 
-	public static String uploadDirectory = System.getProperty("user.dir") + "/src/main/resources/static/images";
+	@Autowired
+	private EmailService emailService;
 
-	// Fetch all products - Accessible to all roles
-	@GetMapping
-	public ResponseEntity<List<Product>> getAllProducts() {
-		return new ResponseEntity<>(productService.getAllProducts(), HttpStatus.OK);
-	}
+	@Autowired
+	private UserRepository userRepository;
 
-	@GetMapping("/computers")
-	public List<Product> getComputerProducts() {
-		return productService.getAllComputerProducts();
-	}
+	// ✅ Updated path to work in both local and Docker environments
+	public static final String uploadDirectory = System.getProperty("user.dir") + "/uploads/images";
 
-	@GetMapping("/fridge")
-	public List<Product> getFridgeProducts() {
-		return productService.getAllFridgeProducts();
-	}
-
-	@GetMapping("/mobile")
-	public List<Product> getMobileProducts() {
-		return productService.getAllMobileProducts();
-	}
-
-	@GetMapping("/watch")
-	public List<Product> getWatchProducts() {
-		return productService.getAllWatchProducts();
-	}
-
-	@GetMapping("/menwear")
-	public List<Product> getMenProducts() {
-		return productService.getAllMenProducts();
-	}
-
-	@GetMapping("/womanwear")
-	public List<Product> getWomanProducts() {
-		return productService.getAllWomanProducts();
-	}
-
-	@GetMapping("/speaker")
-	public List<Product> getSpeakerProducts() {
-		return productService.getAllSpeakerProducts();
-	}
-
-	@GetMapping("/tv")
-	public List<Product> getTvProducts() {
-		return productService.getAllTvProducts();
-	}
-
-	@GetMapping("/furniture")
-	public List<Product> getFurnitureProducts() {
-		return productService.getAllFurnitureProducts();
-	}
-
-	@GetMapping("/kitchen")
-	public List<Product> getKitchenProducts() {
-		return productService.getAllKitchenProducts();
-	}
-
-	@GetMapping("/ac")
-	public List<Product> getAcProducts() {
-		return productService.getAllAcProducts();
-	}
-
-	@PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
-	@PostMapping("/saveData")
-	public Product saveProduct(@ModelAttribute Product product, @RequestParam("image") MultipartFile file)
+	@PostMapping("/register")
+	public ResponseEntity<User> register(@ModelAttribute User user, @RequestParam("image") MultipartFile file)
 			throws IOException {
-		String OriginalFileName = file.getOriginalFilename();
-		Path fileNameandPath = Paths.get(uploadDirectory, OriginalFileName);
-		Files.write(fileNameandPath, file.getBytes());
-		product.setProfileImage(OriginalFileName);
+		// Ensure the upload directory exists
+		Path uploadPath = Paths.get(uploadDirectory);
+		Files.createDirectories(uploadPath);
 
-		Product saveStudentData = productService.saveProductData(product);
-		return saveStudentData;
+		// Save uploaded file
+		String originalFileName = file.getOriginalFilename();
+		Path filePath = uploadPath.resolve(originalFileName);
+		Files.write(filePath, file.getBytes());
+
+		user.setProfileImage(originalFileName);
+
+		// Generate OTP
+		String otp = String.format("%06d", new Random().nextInt(999999));
+		user.setOtp(otp);
+		user.setVerified(false);
+
+		User savedUser = userService.registerUser(user);
+
+		// Send OTP email
+		emailService.sendEmail(
+				savedUser.getEmail(),
+				"ZapKart Email Verification",
+				"Welcome to ZapKart! Your OTP is: " + savedUser.getOtp());
+
+		return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
 	}
 
-	// Update product - Accessible to SELLER and ADMIN only
-	@PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+	@PostMapping("/resend-otp")
+	public ResponseEntity<String> resendOtp(@RequestParam String email) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+		if (user.isVerified()) {
+			return ResponseEntity.badRequest().body("User is already verified.");
+		}
+
+		// generate new OTP
+		String newOtp = String.format("%06d", new Random().nextInt(999999));
+		user.setOtp(newOtp);
+		userRepository.save(user);
+
+		// resend OTP email
+		emailService.sendEmail(
+				user.getEmail(),
+				"ZapKart Email Verification - Resend OTP",
+				"Your new OTP is: " + newOtp);
+
+		return ResponseEntity.ok("Verification email resent successfully.");
+	}
+
+	@PostMapping("/verify-otp")
+	public ResponseEntity<String> verifyOtp(@RequestParam String email, @RequestParam String otp) {
+		User user = userRepository.findByEmail(email)
+				.orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+		if (user.isVerified()) {
+			return ResponseEntity.ok("User already verified!");
+		}
+
+		if (user.getOtp().equals(otp)) {
+			user.setVerified(true);
+			user.setOtp(null); // optional: clear otp
+			userRepository.save(user);
+			return ResponseEntity.ok("Email verified successfully!");
+		} else {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid OTP, please try again.");
+		}
+	}
+
+	@GetMapping("/{id}")
+	public ResponseEntity<User> getUser(@PathVariable Long id) {
+		return new ResponseEntity<>(userService.getUserById(id), HttpStatus.OK);
+	}
+
+	@PostMapping("/signin")
+	public ResponseEntity<String> login(@RequestBody User u) {
+		return userService.ValidateCredentials(u.getEmail(), u.getPassword());
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
 	@PutMapping("/{id}")
-	public Product updateProduct(@PathVariable Long id, @RequestBody Product updatedProduct) {
-		Product existingProduct = productRepository.findById(id)
-				.orElseThrow(() -> new RuntimeException("Product not found"));
+	public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+		User existingUser = userRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
-		if (updatedProduct.getName() != null) {
-			existingProduct.setName(updatedProduct.getName());
-		}
-		if (updatedProduct.getPrice() != null) {
-			existingProduct.setPrice(updatedProduct.getPrice());
-		}
-		if (updatedProduct.getStock() != null) {
-			existingProduct.setStock(updatedProduct.getStock());
-		}
-		if (updatedProduct.getDescription() != null) {
-			existingProduct.setDescription(updatedProduct.getDescription());
-		}
-		if (updatedProduct.getCategory() != null) {
-			existingProduct.setCategory(updatedProduct.getCategory());
-		}
-		if (updatedProduct.getSellerId() != null) {
-			existingProduct.setSellerId(updatedProduct.getSellerId());
-		}
+		if (updatedUser.getName() != null)
+			existingUser.setName(updatedUser.getName());
+		if (updatedUser.getEmail() != null)
+			existingUser.setEmail(updatedUser.getEmail());
+		if (updatedUser.getPassword() != null)
+			existingUser.setPassword(updatedUser.getPassword());
+		if (updatedUser.getRole() != null)
+			existingUser.setRole(updatedUser.getRole());
 
-		return productRepository.save(existingProduct);
+		User savedUser = userRepository.save(existingUser);
+		return new ResponseEntity<>(savedUser, HttpStatus.OK);
 	}
 
-	// Delete product - Accessible to SELLER and ADMIN only
-	@PreAuthorize("hasRole('SELLER') or hasRole('ADMIN')")
+	@PreAuthorize("hasRole('ADMIN')")
+	@GetMapping("/")
+	public ResponseEntity<List<User>> getAllUsers() {
+		return new ResponseEntity<>(userService.getAllUsers(), HttpStatus.OK);
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
 	@DeleteMapping("/{id}")
-	public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
-		productService.deleteProduct(id);
-		return new ResponseEntity<>("Product deleted successfully", HttpStatus.OK);
+	public ResponseEntity<String> deleteUser(@PathVariable Long id) {
+		userService.deleteUser(id);
+		return new ResponseEntity<>("User deleted successfully", HttpStatus.OK);
+	}
+
+	@GetMapping("/secure")
+	public ResponseEntity<String> securedEndpoint() {
+		return ResponseEntity.ok("✅ You have accessed a secured endpoint!");
+	}
+
+	@GetMapping("/me")
+	public ResponseEntity<User> getCurrentUser(HttpServletRequest request) {
+		String token = request.getHeader("Authorization").substring(7);
+		String email = jwtManager.validateToken(token);
+		User user = userRepository.findByEmail(email).orElse(null);
+		return ResponseEntity.ok(user);
+	}
+
+	@PreAuthorize("hasRole('CUSTOMER')")
+	@GetMapping("/orders")
+	public ResponseEntity<String> getMyOrders() {
+		return ResponseEntity.ok("Here are your orders, dear customer!");
+	}
+
+	@PreAuthorize("hasRole('ADMIN')")
+	@GetMapping("/admin/dashboard")
+	public ResponseEntity<String> adminDashboard() {
+		return ResponseEntity.ok("Admin content");
+	}
+
+	@PreAuthorize("hasRole('SELLER')")
+	@GetMapping("/seller/products")
+	public ResponseEntity<String> sellerView() {
+		return ResponseEntity.ok("Seller content");
+	}
+
+	@PostMapping("/forgot-password")
+	public ResponseEntity<String> forgotPassword(@RequestParam String email) {
+		String result = userService.generateResetToken(email);
+		if (result.equals("Buyer not found!"))
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+		return ResponseEntity.ok(result);
+	}
+
+	@PostMapping("/reset-password")
+	public ResponseEntity<String> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
+		String result = userService.resetPassword(token, newPassword);
+		if (result.equals("Invalid token!"))
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(result);
+		return ResponseEntity.ok(result);
+	}
+
+	@PutMapping("/updateprofile")
+	public ResponseEntity<?> updateProfile(@RequestBody User updatedData, HttpServletRequest request) {
+		String token = request.getHeader("Authorization").substring(7);
+		String email = jwtManager.validateToken(token);
+
+		User updatedUser = userService.updateUserProfile(email, updatedData.getName());
+		if (updatedUser == null)
+			return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+		return ResponseEntity.ok(updatedUser);
+	}
+
+	@GetMapping("/customercount")
+	public ResponseEntity<Long> getCustomerCount() {
+		long count = userService.displaycustomercount();
+		return ResponseEntity.ok(count);
+	}
+
+	@GetMapping("/sellercount")
+	public ResponseEntity<Long> getSellerCount() {
+		long count = userService.displaysellercount();
+		return ResponseEntity.ok(count);
+	}
+
+	@GetMapping("/admincount")
+	public ResponseEntity<Long> getAdminCount() {
+		long count = userService.displayadmincount();
+		return ResponseEntity.ok(count);
 	}
 }
