@@ -13,15 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import com.zapkart.ecommerce_backend.model.Product;
 import com.zapkart.ecommerce_backend.model.User;
 import com.zapkart.ecommerce_backend.service.UserService;
-
-import jakarta.servlet.http.HttpServletRequest;
-
 import com.zapkart.ecommerce_backend.repository.UserRepository;
 import com.zapkart.ecommerce_backend.service.EmailService;
 import com.zapkart.ecommerce_backend.service.JWTManager;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RestController
@@ -40,24 +38,31 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-    public static String uploadDirectory = System.getProperty("user.dir") + "/src/main/resources/static/images";
+    // Store uploads in a runtime-safe path (works in Docker + local)
+    public static final String uploadDirectory = System.getProperty("user.dir") + "/uploads/images";
 
     @PostMapping("/register")
     public ResponseEntity<User> register(@ModelAttribute User user, @RequestParam("image") MultipartFile file)
             throws IOException {
-        String OriginalFileName = file.getOriginalFilename();
-        Path fileNameandPath = Paths.get(uploadDirectory, OriginalFileName);
-        Files.write(fileNameandPath, file.getBytes());
-        user.setProfileImage(OriginalFileName);
+        // Ensure upload directory exists
+        Path uploadPath = Paths.get(uploadDirectory);
+        Files.createDirectories(uploadPath);
 
-        // generate OTP
+        // Save uploaded file
+        String originalFileName = file.getOriginalFilename();
+        Path filePath = uploadPath.resolve(originalFileName);
+        Files.write(filePath, file.getBytes());
+
+        user.setProfileImage(originalFileName);
+
+        // Generate OTP
         String otp = String.format("%06d", new Random().nextInt(999999));
         user.setOtp(otp);
-        user.setVerified(false); // newly registered user must verify
+        user.setVerified(false);
 
         User savedUser = userService.registerUser(user);
 
-        // send OTP to email
+        // Send OTP email
         emailService.sendEmail(
                 savedUser.getEmail(),
                 "ZapKart Email Verification",
@@ -132,7 +137,7 @@ public class UserController {
         }
         if (updatedUser.getPassword() != null) {
             existingUser.setPassword(updatedUser.getPassword());
-            // Optional: Re-encode password here if using Spring Security
+            // Optional: re-encode password if using Spring Security
         }
         if (updatedUser.getRole() != null) {
             existingUser.setRole(updatedUser.getRole());
@@ -148,7 +153,6 @@ public class UserController {
         return new ResponseEntity<>(userService.getAllUsers(), HttpStatus.OK);
     }
 
-    // Delete product - Accessible to ADMIN only
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
@@ -172,7 +176,6 @@ public class UserController {
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/orders")
     public ResponseEntity<String> getMyOrders() {
-        // You can later fetch real orders from DB
         return ResponseEntity.ok("Here are your orders, dear customer!");
     }
 
