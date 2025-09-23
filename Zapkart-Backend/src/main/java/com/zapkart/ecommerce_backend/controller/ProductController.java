@@ -94,13 +94,22 @@ public class ProductController {
 	@PostMapping("/saveData")
 	public Product saveProduct(@ModelAttribute Product product, @RequestParam("image") MultipartFile file)
 			throws IOException {
-		String OriginalFileName = file.getOriginalFilename();
-		Path fileNameandPath = Paths.get(uploadDirectory, OriginalFileName);
-		Files.write(fileNameandPath, file.getBytes());
-		product.setProfileImage(OriginalFileName);
+		// Ensure the upload directory exists
+		Path uploadPath = Paths.get(UserController.uploadDirectory); // reuse the same path as UserController
+		Files.createDirectories(uploadPath);
 
-		Product saveStudentData = productService.saveProductData(product);
-		return saveStudentData;
+		// Save the uploaded file
+		String originalFileName = file.getOriginalFilename();
+		Path filePath = uploadPath.resolve(originalFileName);
+		Files.write(filePath, file.getBytes());
+
+		// Set the image filename in the product
+		product.setProfileImage(originalFileName);
+
+		// Save product to the database
+		Product savedProduct = productService.saveProductData(product);
+
+		return savedProduct;
 	}
 
 	// Update product - Accessible to SELLER and ADMIN only
