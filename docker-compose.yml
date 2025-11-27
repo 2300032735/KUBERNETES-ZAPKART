@@ -13,10 +13,10 @@ services:
       - springboot-mysql-net
 
   backend:
-    image: shaikvaliyababji/zepkart-backend:latest
+    image: 2300032735/kubernetes-zepkart-backend:latest
     container_name: springboot
     ports:
-      - "2025:8080"
+      - "6666:8080"
     depends_on:
       - mysqldb
     restart: on-failure
@@ -24,10 +24,10 @@ services:
       - springboot-mysql-net
 
   frontend:
-    image: shaikvaliyababji/zepkart-frontend:latest
+    image: 2300032735/kubernetes-zepkart-frontend:latest
     container_name: react
     ports:
-      - "3000:80"
+      - "9999:80"
     depends_on:
       - backend
     restart: on-failure
