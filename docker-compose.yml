@@ -16,7 +16,7 @@ services:
     image: 2300032735/kubernetes-zepkart-backend:latest
     container_name: springboot
     ports:
-      - "6666:8080"
+      - "2025:8080"
     depends_on:
       - mysqldb
     restart: on-failure
@@ -27,7 +27,7 @@ services:
     image: 2300032735/kubernetes-zepkart-frontend:latest
     container_name: react
     ports:
-      - "9999:80"
+      - "3000:80"
     depends_on:
       - backend
     restart: on-failure
